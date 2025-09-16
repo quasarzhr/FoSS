@@ -13,12 +13,16 @@ const cellSize = Math.min(canvas.width, canvas.height) / rows;
 let maze = [];
 let visited = [];
 
-// 小球与终点
-let player = { x: 0, y: 0 };
-let goal = { x: cols - 1, y: rows - 1 };
-let speed = 0.2; // 控制灵敏度
+// 小球像素位置与速度
+let player = { x: cellSize/2, y: cellSize/2 };
+let velocity = { x: 0, y: 0 };
+let maxSpeed = 5;
+let damping = 0.9;
 
-// 生成空迷宫网格
+// 终点像素位置
+let goal = { x: cols - 0.5, y: rows - 0.5 };
+
+// 初始化空迷宫
 function initMaze() {
   maze = [];
   visited = [];
@@ -32,14 +36,14 @@ function initMaze() {
   }
 }
 
-// 递归回溯算法生成迷宫
+// 递归回溯生成迷宫
 function generateMaze(cx = 0, cy = 0) {
   visited[cy][cx] = true;
   maze[cy][cx] = 0;
 
   const directions = [[0,-1],[1,0],[0,1],[-1,0]].sort(() => Math.random()-0.5);
 
-  for (let [dx,dy] of directions) {
+  for (let [dx, dy] of directions) {
     const nx = cx + dx*2;
     const ny = cy + dy*2;
     if (nx>=0 && nx<cols && ny>=0 && ny<rows && !visited[ny][nx]) {
@@ -49,73 +53,88 @@ function generateMaze(cx = 0, cy = 0) {
   }
 }
 
-// 绘制迷宫和小球
+// 绘制迷宫与小球
 function draw() {
   ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  // 画墙
-  for (let y=0; y<rows; y++) {
-    for (let x=0; x<cols; x++) {
-      if (maze[y][x]===1) {
-        ctx.fillStyle="#555";
+  // 绘制墙壁
+  ctx.fillStyle = "#555";
+  for (let y=0; y<rows; y++){
+    for (let x=0; x<cols; x++){
+      if(maze[y][x]===1){
         ctx.fillRect(x*cellSize, y*cellSize, cellSize, cellSize);
       }
     }
   }
 
-  // 画终点
-  ctx.fillStyle="limegreen";
-  ctx.fillRect(goal.x*cellSize+cellSize*0.2, goal.y*cellSize+cellSize*0.2, cellSize*0.6, cellSize*0.6);
+  // 绘制终点
+  ctx.fillStyle = "limegreen";
+  ctx.fillRect((goal.x-0.5)*cellSize+cellSize*0.2, (goal.y-0.5)*cellSize+cellSize*0.2, cellSize*0.6, cellSize*0.6);
 
-  // 画小球
-  ctx.fillStyle="blue";
+  // 绘制小球
+  ctx.fillStyle = "blue";
   ctx.beginPath();
-  ctx.arc(player.x*cellSize+cellSize/2, player.y*cellSize+cellSize/2, cellSize/3, 0, Math.PI*2);
+  ctx.arc(player.x, player.y, cellSize/3, 0, Math.PI*2);
   ctx.fill();
 }
 
-// 检测碰撞
-function canMove(nx, ny){
-  return nx>=0 && nx<cols && ny>=0 && ny<rows && maze[ny][nx]===0;
+// 碰撞检测
+function canMove(newX, newY){
+  const col = Math.floor(newX / cellSize);
+  const row = Math.floor(newY / cellSize);
+  return col>=0 && col<cols && row>=0 && row<rows && maze[row][col]===0;
 }
 
-// 移动小球
-function moveBall(dx, dy){
-  let nx = player.x;
-  let ny = player.y;
+// 更新小球位置
+function update(){
+  let newX = player.x + velocity.x;
+  let newY = player.y + velocity.y;
 
-  if (Math.abs(dx) > 0.5) nx += dx>0?1:-1;
-  if (Math.abs(dy) > 0.5) ny += dy>0?1:-1;
+  if(canMove(newX, player.y)) player.x = newX;
+  else velocity.x *= -0.5; // 撞墙反弹
 
-  if (canMove(nx, ny)){
-    player.x = nx;
-    player.y = ny;
-  }
+  if(canMove(player.x, newY)) player.y = newY;
+  else velocity.y *= -0.5; // 撞墙反弹
 
-  if(player.x===goal.x && player.y===goal.y){
+  // 阻尼，惯性效果
+  velocity.x *= damping;
+  velocity.y *= damping;
+
+  // 检测胜利
+  const distX = player.x/cellSize - goal.x;
+  const distY = player.y/cellSize - goal.y;
+  if(Math.sqrt(distX*distX + distY*distY) < 0.5){
     alert("🎉 恭喜通关！");
     resetGame();
   }
 
   draw();
+  requestAnimationFrame(update);
 }
 
-// 初始化游戏
+// 陀螺仪控制速度
+window.addEventListener("deviceorientation", e=>{
+  velocity.x += e.gamma * 0.05; // 左右倾斜
+  velocity.y += e.beta * 0.05;   // 前后倾斜
+
+  // 限制最大速度
+  velocity.x = Math.max(Math.min(velocity.x, maxSpeed), -maxSpeed);
+  velocity.y = Math.max(Math.min(velocity.y, maxSpeed), -maxSpeed);
+});
+
+// 重置游戏
 function resetGame(){
   initMaze();
   generateMaze();
-  player = {x:0, y:0};
-  goal = {x:cols-1, y:rows-1};
+  player = { x: cellSize/2, y: cellSize/2 };
+  velocity = { x: 0, y: 0 };
+  goal = { x: cols - 0.5, y: rows - 0.5 };
   draw();
 }
-
-// 陀螺仪控制
-window.addEventListener("deviceorientation", e=>{
-  moveBall(e.gamma*speed, e.beta*speed);
-});
 
 // 刷新按钮
 restartBtn.addEventListener("click", resetGame);
 
 // 初始化
 resetGame();
+update(); // 启动动画循环
