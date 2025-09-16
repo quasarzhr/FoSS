@@ -8,26 +8,26 @@ let ballY = 10;
 let speed = 2; // 控制灵敏度
 
 function createRandomMaze() {
-  // 先清空旧墙壁
+  // 清空旧墙壁
   document.querySelectorAll(".wall").forEach(w => w.remove());
 
   const mazeWidth = maze.clientWidth;
   const mazeHeight = maze.clientHeight;
 
-  // 生成一些随机墙壁
-  for (let i = 0; i < 12; i++) {
+  for (let i = 0; i < 20; i++) { // 控制迷宫复杂度
     const wall = document.createElement("div");
     wall.classList.add("wall");
 
-    // 随机位置与大小
-    let w = Math.random() > 0.5 ? 150 : 20; // 横墙 or 竖墙
-    let h = w === 150 ? 20 : 150;
+    // 横墙 / 竖墙，基于屏幕比例
+    let isHorizontal = Math.random() > 0.5;
+    let w = isHorizontal ? mazeWidth * 0.3 : mazeWidth * 0.05;
+    let h = isHorizontal ? mazeHeight * 0.05 : mazeHeight * 0.3;
 
     let x = Math.floor(Math.random() * (mazeWidth - w - 40)) + 20;
     let y = Math.floor(Math.random() * (mazeHeight - h - 40)) + 20;
 
-    // 避开起点和终点区域
-    if ((x < 60 && y < 60) || (x > mazeWidth - 100 && y > mazeHeight - 100)) {
+    // 避开起点 (左上角) 和终点 (右下角)
+    if ((x < 100 && y < 100) || (x > mazeWidth - 150 && y > mazeHeight - 150)) {
       continue;
     }
 
@@ -41,7 +41,7 @@ function createRandomMaze() {
 
 function checkCollision(x, y) {
   // 边界检测
-  if (x < 0 || y < 0 || x + 20 > maze.clientWidth || y + 20 > maze.clientHeight) {
+  if (x < 0 || y < 0 || x + ball.clientWidth > maze.clientWidth || y + ball.clientHeight > maze.clientHeight) {
     return true;
   }
   // 墙壁检测
@@ -51,8 +51,8 @@ function checkCollision(x, y) {
     const ballRect = {
       left: maze.offsetLeft + x,
       top: maze.offsetTop + y,
-      right: maze.offsetLeft + x + 20,
-      bottom: maze.offsetTop + y + 20
+      right: maze.offsetLeft + x + ball.clientWidth,
+      bottom: maze.offsetTop + y + ball.clientHeight
     };
     if (!(ballRect.right < rect.left || 
           ballRect.left > rect.right || 
@@ -110,33 +110,3 @@ restartBtn.addEventListener("click", resetGame);
 
 // 初始化
 createRandomMaze();
-
-function createRandomMaze() {
-  document.querySelectorAll(".wall").forEach(w => w.remove());
-
-  const mazeWidth = maze.clientWidth;
-  const mazeHeight = maze.clientHeight;
-
-  for (let i = 0; i < 20; i++) { // 难度稍微加大
-    const wall = document.createElement("div");
-    wall.classList.add("wall");
-
-    // 横墙/竖墙，按屏幕大小比例生成
-    let isHorizontal = Math.random() > 0.5;
-    let w = isHorizontal ? mazeWidth * 0.3 : mazeWidth * 0.05;
-    let h = isHorizontal ? mazeHeight * 0.05 : mazeHeight * 0.3;
-
-    let x = Math.floor(Math.random() * (mazeWidth - w - 40)) + 20;
-    let y = Math.floor(Math.random() * (mazeHeight - h - 40)) + 20;
-
-    if ((x < 100 && y < 100) || (x > mazeWidth - 150 && y > mazeHeight - 150)) {
-      continue;
-    }
-
-    wall.style.left = x + "px";
-    wall.style.top = y + "px";
-    wall.style.width = w + "px";
-    wall.style.height = h + "px";
-    maze.appendChild(wall);
-  }
-}
