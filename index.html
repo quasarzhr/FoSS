@@ -2,14 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Sensor Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>随机迷宫小游戏</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Device Orientation & Motion Demo</h1>
-  <div id="output">Waiting for sensor data...</div>
-  <canvas id="canvas"></canvas>
-
+  <h1>🎮 随机迷宫小游戏</h1>
+  <p>倾斜手机控制小球，从蓝色起点到绿色终点！</p>
+  <div id="maze">
+    <div id="ball"></div>
+    <div id="goal"></div>
+  </div>
+  <button id="restart">🔄 刷新迷宫</button>
   <script src="script.js"></script>
 </body>
 </html>
